@@ -341,6 +341,22 @@ time.series.plot + theme_bw() + labs(y = "Average no of steps")
 ![](PA1_template_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
 
 The above plot shows the daily acitivity pattern.  
+Let's find out which specific interval has the maximum number of steps (averaged) among all the intervals.  
+
+```r
+max.index <- which.max(steps_by_interval$Mean.steps)
+max.no.steps <- steps_by_interval[max.index,1]
+max.no.steps
+```
+
+```
+## # A tibble: 1 x 1
+##   interval
+##      <int>
+## 1      835
+```
+
+The maximum averaged number of steps among all intervals is **206.1698113** and it occurs at the **835th** interval
 
 ## Imputing missing values
 
@@ -399,7 +415,7 @@ steps.per.day.imputed.hist <- ggplot(steps.per.day.imputed,aes(Total.steps))+geo
 steps.per.day.imputed.hist + labs(title  = "Histogram of steps taken per day", x = "No. of steps",fill ="")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+![](PA1_template_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 Let's look at the mean and median of total number of steps taken per day
 
@@ -444,7 +460,7 @@ time.series.by.day.plot <- ggplot(time.series.by.day,aes(interval,mean.steps)) +
 time.series.by.day.plot + theme_classic() + facet_grid(.~Day) + labs(y = "Mean no. of steps")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](PA1_template_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 The above plot shows the time series plot of average daily activity separated between weekends and weekdays.  
 It is clear from the plot that during weekdays there a big peak in number of steps around 800 to 900 hours in the morning.This is expected as most people go to work around that time. That is also the case in weekends but the amplitude of the spike is less than that of weekdays. But during weekends there are spikes even after 900 hours whereas in weekdays there seems to be none (significantly). There is smaller yet significant peak of number of steps during weekday around 1800 to 1900 hours, which corresponds to the return home from work. This is missing from that of weekends.

@@ -98,6 +98,14 @@ time.series.plot + theme_bw() + labs(y = "Average no of steps")
 ```
 
 The above plot shows the daily acitivity pattern.  
+Let's find out which specific interval has the maximum number of steps (averaged) among all the intervals.  
+```{r}
+max.index <- which.max(steps_by_interval$Mean.steps)
+max.no.steps <- steps_by_interval[max.index,1]
+max.no.steps
+```
+
+The maximum averaged number of steps among all intervals is **`r max(steps_by_interval$Mean.steps)`** and it occurs at the **`r max.no.steps`th** interval
 
 ## Imputing missing values
 

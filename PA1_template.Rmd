@@ -1,25 +1,173 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: 'Reproducible Research: Peer Assessment 1'
+output:
+        html_document:
+        keep_md: yes
 ---
 
+```{r global_options, include=FALSE}
+rm(list=ls()) ### To clear namespace
+library(knitr)
+opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, fig.width = 10)
+```
 
 ## Loading and preprocessing the data
 
+The data is saved as a csv file of the name 'activity.csv' inside the folder activity. Reading the data using read.csv()
 
+```{r echo=FALSE, results = "hide"}
+## If the file is in a zipped folder, it has to be extracted before read
+if(!file.exists("activity")){
+        unzip("activity.zip",exdir = "activity")
+}
+```
+
+```{r}
+## Reading the data
+activity <- read.csv("./activity/activity.csv",as.is = TRUE,na.strings = "NA")
+str(activity)
+```
+
+From the output of `str()` function, it can be seen that the data frame has 17568 observations and 3 variables, namely `steps`,`date` and `interval`. One thing to notice here is that `date` column is of `character` type and not read as `Date` Class. Changing the format of `date` column to `Date` data type.
+
+```{r}
+## Processing the date column
+activity$date <- as.Date(activity$date,format = "%Y-%m-%d")
+```
 
 ## What is mean total number of steps taken per day?
 
+To find the mean of total number of steps taken per day, first the total number of steps taken each day is calculated.
 
+```{r message=FALSE,warning=FALSE}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+steps.per.day <- activity %>% group_by(date) %>% summarise(Total.steps = sum(steps))
+steps.per.day <- na.omit(steps.per.day)
+kable(steps.per.day, "html") %>%
+  kable_styling() %>%
+        add_footnote("NAs are omitted", notation = "symbol") %>%
+                scroll_box(width = "900px", height = "200px") 
+```
+
+ 
+Above data can be graphically seen as
+
+```{r}
+plot(steps.per.day, 
+     type = "h", 
+     lwd = 10, 
+     lend = "square", 
+     xlab = "Date", 
+     ylab = "Total steps taken",
+     main = "Steps taken per day")
+```
+
+
+Let's look at the distribution of total number of steps by plotting a histogram
+
+```{r}
+library(ggplot2)
+steps.per.day.hist <- ggplot(steps.per.day,aes(steps.per.day$Total.steps))+geom_histogram(fill = "blue")
+steps.per.day.hist + labs(title  = "Histogram of steps taken per day", x = "No. of steps")
+```
+
+It can be seen that the most of the total number of steps are distributed between 10000 and 15000 steps
+
+```{r}
+mean.steps.per.day <- mean(steps.per.day$Total.steps)
+median.steps.per.day <- median(steps.per.day$Total.steps)
+mean.steps.per.day
+median.steps.per.day
+```
+
+Thus we get the following results:  
+**Mean** of total number of steps per day is `r mean.steps.per.day`  
+**Median** of total number of steps per day is `r median.steps.per.day`
 
 ## What is the average daily activity pattern?
 
+To get the average daily activity we should look at steps taken on each 5-minute intervals averaged over all days.   
 
+```{r}
+# Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+steps_by_interval <- activity %>% group_by(interval) %>% summarise( Mean.steps = mean(steps,na.rm = TRUE))
+time.series.plot <- ggplot(steps_by_interval,aes(interval, Mean.steps)) + geom_line(col = "blue")
+time.series.plot + theme_bw() + labs(y = "Average no of steps")
+```
+
+The above plot shows the daily acitivity pattern.  
 
 ## Imputing missing values
 
+Till now `NA` values were being omitted. Before adressing `NA` values, Let's look at the number of `NA` values in the data set.
 
+```{r}
+sum(is.na(activity))
+```
+
+
+There are 2304 `NA` values in the data set. Where do we have these `NA` values?
+
+```{r}
+missing <- subset(activity,is.na(activity$steps))
+table(missing$date)
+```
+
+Since we know that the no of intervals for each day is 288, from the above table we can infer that entire day's data is missing for the above given dates.  
+
+There are different ways by which `NA` values can be imputed. Here imputation is done using average number of steps for each interval.
+
+```{r}
+# Adding a column named Missing that represents whether the data is imputed or not.
+activity$Missing <- as.factor(ifelse(is.na(activity$steps),"Imputed","Non-Imputed"))
+
+
+activity_imputed <- transform(activity,
+                              steps = ifelse(is.na(activity$steps),
+                                             steps_by_interval$Mean.steps[match(activity$interval,
+                                                                                steps_by_interval$interval)],
+                                             activity$steps))
+```
+
+
+Let's look at the distribution of total number of per day by plotting a histogram.  
+
+```{r}
+steps.per.day.imputed <- activity_imputed %>% group_by(date,Missing) %>% summarise(Total.steps = sum(steps))
+steps.per.day.imputed.hist <- ggplot(steps.per.day.imputed,aes(Total.steps))+geom_histogram(aes(fill = Missing))
+steps.per.day.imputed.hist + labs(title  = "Histogram of steps taken per day", x = "No. of steps",fill ="")
+```
+
+Let's look at the mean and median of total number of steps taken per day
+```{r}
+mean.steps.per.day.imputed <- mean(steps.per.day.imputed$Total.steps)
+median.steps.per.day.imputed <- median(steps.per.day.imputed$Total.steps)
+mean.steps.per.day.imputed
+median.steps.per.day.imputed
+```
+
+Thus we get the following results:  
+**Mean** of total number of steps per day after imputing is **`r mean.steps.per.day.imputed`** (Recall that **mean before imputing** was **`r mean.steps.per.day`**)  
+**Median** of total number of steps per day after imputing is **`r median.steps.per.day.imputed`** (Recall that **median before imputing** was **`r median.steps.per.day`**)  
+Difference in the total number of steps is **`r sum(steps.per.day.imputed$Total.steps) - sum(steps.per.day$Total.steps)`**  
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+To find the differences in activity patterns between weekdays and weekends, a new variable `Day` representing the day of the week for the corresponding date is created.  
+```{r}
+weekend <- c("Sunday","Saturday")
+activity_imputed$Day <- as.factor(ifelse(weekdays(activity_imputed$date) %in% weekend, "Weekend","Weekday"))
+```
+
+To get the average daily activity we should look at steps taken on each 5-minute intervals averaged over all days.  
+
+```{r}
+time.series.by.day <- activity_imputed %>% group_by(interval,Day) %>% summarise(mean.steps = mean(steps))
+time.series.by.day.plot <- ggplot(time.series.by.day,aes(interval,mean.steps)) + geom_line(aes(col = Day),lwd = 0.7,show.legend = FALSE)
+time.series.by.day.plot + theme_classic() + facet_grid(.~Day) + labs(y = "Mean no. of steps")
+```
+
+The above plot shows the time series plot of average daily activity separated between weekends and weekdays.  
+It is clear from the plot that during weekdays there a big peak in number of steps around 800 to 900 hours in the morning.This is expected as most people go to work around that time. That is also the case in weekends but the amplitude of the spike is less than that of weekdays. But during weekends there are spikes even after 900 hours whereas in weekdays there seems to be none (significantly). There is smaller yet significant peak of number of steps during weekday around 1800 to 1900 hours, which corresponds to the return home from work. This is missing from that of weekends.
